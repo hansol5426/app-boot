@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+    layout:decorate="~{layout/main_layout}">
+<th:block layout:fragment="css">
+    <link rel="stylesheet" href="/css/boardDetail.css">
+    <style>
+
+    </style>
+</th:block>
+<div layout:fragment="content">
+    <main class="container">
+        <header class="text-center">
+            <h2>게시글 보기</h2>
+        </header>
+        <section class="write-form">
+            <input type="hidden" id="brdId" name="brdId" th:value="${vo.brdId}">
+            <table class="table">
+                <colgroup>
+                    <col style="width: 15%" />
+                    <col style="width: 35%" />
+                    <col style="width: 15%" />
+                    <col style="width: 35%" />
+                </colgroup>
+                <tbody>
+                    <tr>
+                        <th>
+                            <label class="form-label pt-2">제목</label>
+                        </th>
+                        <td colspan="3">
+                            [[${vo.title}]]
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <label class="form-label pt-2">글쓴이</label>
+                        </th>
+                        <td colspan="3" th:text="${vo.writer}"></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <label class="form-label pt-2">조회수</label>
+                        </th>
+                        <td th:text="${vo.readCount}"></td>
+                        <th>
+                            <label class="form-label pt-2">좋아요</label>
+                        </th>
+                        <td th:text="${vo.likeCount}"></td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <label class="form-label pt-2">첨부파일</label>
+                        </th>
+                        <td colspan="3">
+                            <span th:if="${#lists.isEmpty(vo.fileList)}">없음</span>
+                            <ul class="file-list" th:unless="${#lists.isEmpty(vo.fileList)}">
+                                <li class="file-item" th:each="item:${vo.fileList}">
+                                    <a class="file-link" th:href="@{/api/v1/board/file/{bfId}(bfId=${item.bfId})}">
+                                        [[${item.fileName}]]</a>
+                                </li>
+                            </ul>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th>
+                            <label class="form-label pt-2">내용</label>
+                        </th>
+                        <td colspan="3">
+                            [[${vo.contents}]]
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+        <section class="text-center">
+            <button type="button" class="btn btn-warning me-2" onclick="updateLike();">좋아요</button>
+            <button type="button" class="btn btn-primary me-2" onclick="updateBoard();">글 수정</button>
+            <button type="button" class="btn btn-danger me-2" onclick="deleteBoard();">글 삭제</button>
+            <button type="button" class="btn btn-secondary" onclick="goList();">목록</button>
+        </section>
+    </main>
+    <script>
+
+        const goList = () => {
+            location.href = '/board/list';
+        }
+
+        const updateBoard = () => {
+            const brdId = $('#brdId').val();
+            location.href = `/board/update/${brdId}`;
+        }
+
+        const deleteBoard = () => {
+            // 삭제 확인 요청
+            const isConfirm = confirm('정말 삭제하시겠습니까?');
+            // 삭제한다고 하면
+            if (isConfirm) {
+                // 삭제할 게시글ID 가져오기
+                const brdId = $('#brdId').val();
+                // 삭제요청 보내기
+                axios.post(`/api/v1/board/delete/${brdId}`)
+                    .then(resp => {
+                        // 코드가 200이면 삭제성공
+                        if (resp.data.resultCode === 200) {
+                            alert("삭제가 완료되었습니다.");
+                            // 삭제 완료 후 게시글 목록으로 보내기
+                            location.href = '/board/list';
+                        // 코드가 200이 아니면 에러띄우기    
+                        } else {
+                            alert("삭제 처리중 오류가 발생하였습니다.");
+                        }
+                    })
+                    .catch(error => {
+                        alert(error);
+                    });
+            }
+        }
+
+
+
+    </script>
+</div>
+
+</html>
