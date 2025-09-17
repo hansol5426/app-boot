@@ -133,77 +133,80 @@ public class BoardJPAService {
         return resultMap;
     }
 
-    // 게시글 수정
     @Transactional
     public Map<String, Object> updateBoard(BoardDTO.Request request) throws Exception{
-        Map<String,Object> resultMap = new HashMap<>();
-
-        // 물리적으로 저장
-        Map<String, Object> fileMap = fileUtils.uploadFiles(request.getFile(), filePath);
-        // brdId에 해당하는 게시글 조회, 없으면 예외
-        BoardEntity entity = boardRepository.findById(request.getBrdId())
-            .orElseThrow(()-> new RuntimeException("게시글이 존재하지 않습니다."));
-
-        // 게시글 정보 수정    
+        
+        BoardEntity entity = 
+            boardRepository.getBoard(request.getBrdId())
+            .orElseThrow(()-> new RuntimeException("게시글 없음"));
+        
+        BoardDTO.Detail detail = BoardDTO.Detail.of(entity);       
+        
         entity.setTitle(request.getTitle());
         entity.setContents(request.getContents());
-        entity.setWriter("admin");
+        
+        if(!request.getFile().isEmpty()){
 
-        // 새로운 첨부파일 있으면
-        if(fileMap != null){
-            // 기존 파일 삭제
-            entity.getFileList().forEach(file -> {
-            try{
-                String fullPath = file.getFilePath() + file.getStoredName();
-                fileUtils.deleteFile(fullPath);
-            }catch(Exception e){
-                throw new RuntimeException("파일 삭제중 오류가 발생하였습니다.");
+            Map<String,Object> fileMap = fileUtils.uploadFiles(request.getFile(), filePath);
+
+            entity.getFileList().clear();  // 기존 목록 날리기
+            
+            if(fileMap != null){
+
+                BoardFileEntity fileEntity = new BoardFileEntity();
+                fileEntity.setFileName(fileMap.get("fileName").toString());
+                fileEntity.setStoredName(fileMap.get("storedFileName").toString());
+                fileEntity.setFilePath(fileMap.get("filePath").toString());
+                fileEntity.setFileSize(request.getFile().getSize());
+                entity.addFiles(fileEntity);
+            
+            }else{
+                throw new Exception("파일 업로드 실패");
             }
-            });
-            // 기존 파일 목록 비우기
-            entity.getFileList().clear();
-
-            // 새로운 첨부파일로 생성
-            BoardFileEntity fileEntity = new BoardFileEntity();
-            fileEntity.setFileName(fileMap.get("fileName").toString());
-            fileEntity.setStoredName(fileMap.get("storedFileName").toString());
-            fileEntity.setFilePath(fileMap.get("filePath").toString());
-            fileEntity.setFileSize(request.getFile().getSize());
-            // 새 첨부파일 추가
-            entity.addFiles(fileEntity);
         }
-
-        // 수정된 게시글 db에 저장
+            
         boardRepository.save(entity);
+
+        // 데이터베이스 롤백을 대비해서 물리파일은 마지막에 지운다
+        if(!request.getFile().isEmpty()){
+
+            if(detail.getFileList() != null && detail.getFileList().size() > 0){
+                for(BoardFileDTO fileDTO : detail.getFileList()){
+                    String oldFilePath = fileDTO.getFilePath() + fileDTO.getStoredName();
+                    // 파일 삭제
+                    fileUtils.deleteFile(oldFilePath);
+                }
+            }
+        }    
+        
+        Map<String,Object> resultMap = new HashMap<>();
 
         resultMap.put("resultCode", 200);
         resultMap.put("resultMsg", "OK");
-        
 
         return resultMap;
     }
 
     // 게시글 삭제
     @Transactional
-    public Map<String, Object> deleteBoard(@PathVariable("brdId") int brdId) throws Exception{
+    public Map<String, Object> deleteBoard(int brdId) throws Exception{
 
-        Map<String,Object> resultMap = new HashMap<>();
-        // brdId에 해당하는 게시글 조회, 없으면 예외
-        BoardEntity entity = boardRepository.findById(brdId)
+        BoardEntity entity = 
+            boardRepository.getBoard(brdId)
             .orElseThrow(()-> new RuntimeException("게시글이 존재하지 않습니다."));
-        // 게시글의 첨부파일 물리적 삭제
-        entity.getFileList().forEach(file -> {
-            try{
-                // 파일 경로
-                String fullPath = file.getFilePath() + file.getStoredName();
-                fileUtils.deleteFile(fullPath);
-            }catch(Exception e){
-                throw new RuntimeException("파일 삭제중 오류가 발생하였습니다.");
-            }
-        });
-
-        // db삭제
+            
         boardRepository.delete(entity);
+        
+
+        if(entity.getFileList() != null && entity.getFileList().size() > 0){
+            for(BoardFileEntity fileEntity : entity.getFileList()){
+                String oldFilePath = fileEntity.getFilePath() + fileEntity.getStoredName();
+                // 파일 삭제
+                fileUtils.deleteFile(oldFilePath);
+            }       
+        }
+        
+        Map<String,Object> resultMap = new HashMap<>();
 
         resultMap.put("resultCode", 200);
         resultMap.put("resultMsg", "OK");
@@ -270,22 +273,24 @@ public class BoardJPAService {
     }
 
     // 파일 삭제
-    public void delFile(int bfId) throws Exception{
+    public Map<String, Object> delFile(int bfId) throws Exception{
 
         // 파일 정보
-        BoardFileDTO fileDTO = 
-            BoardFileDTO.of(
-                fileRepository
-                .findById(bfId)
-                .orElseThrow(()-> new NotFoundException("파일 정보 없음"))
-            );
+        BoardFileEntity entity = fileRepository
+                                .findById(bfId)
+                                .orElseThrow(()-> new NotFoundException("파일 정보 없음"));
 
-        // 파일 경로
-        String fullPath = fileDTO.getFilePath() + fileDTO.getStoredName();
-        // 실제 삭제
-        fileUtils.deleteFile(fullPath);
-        // db 삭제
-        fileRepository.deleteById(bfId);   
+        fileRepository.delete(entity);   
+
+        String oldFilePath = entity.getFilePath() + entity.getStoredName();
+        fileUtils.deleteFile(oldFilePath);
+
+        Map<String,Object> resultMap = new HashMap<>();
+
+        resultMap.put("resultCode", 200);
+        resultMap.put("resultMsg", "OK");
+        
+        return resultMap;
 
     }
 

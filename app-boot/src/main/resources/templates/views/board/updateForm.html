@@ -75,11 +75,11 @@
                                 <input type="file" id="file" name="file" class="form-control">
                             </td>
                         </tr>
-                        <tr id="fileTr">
-                            <td>
+                        <tr>
+                            <td id="fileTd">
                                 <span th:if="${#lists.isEmpty(vo.fileList)}">없음</span>
                                 <ul class="file-list" th:unless="${#lists.isEmpty(vo.fileList)}">
-                                    <li class="file-item" th:each="item:${vo.fileList}" th:id="'fileItem'+${item.bfId}">
+                                    <li class="file-item" th:each="item:${vo.fileList}" id="fileItem">
                                         [[${item.fileName}]]
                                         <a class="file-link" href="javascript:void(0);"
                                             th:onclick="|delFile(${item.bfId})|"><i class="fa-solid fa-xmark"></i></a>
@@ -129,73 +129,62 @@
             if (file && fileCount > 0) {
                 const isConfirm = confirm('첨부파일을 추가하시면 기존파일이 삭제됩니다.\n진행하시겠습니까?')
 
-                if (isConfirm) {
+                if (file) {
                     const maxSize = 50 * 1024 * 1024;
                     if (file.size > maxSize) {
                         alert('파일은 최대 50mb만 가능합니다.');
                         return false;
                     }
-                }else{
-                    return false;
                 }
-
             }
             return true;
         }
 
-        // 파일 삭제
         const delFile = (bfId) => {
-            // 삭제 확인
             const isConfirm = confirm('삭제하시면 수정을 취소해도 삭제됩니다.\n진행하시겠습니까?');
-            // 진행한다고 하면
+
             if (isConfirm) {
-                // 파일 삭제 요청 보냄
-                axios.post(`/api/v1/board/file/${bfId}`)
-                // 요청이 성공하면   
-                .then(resp => {
-                    if (resp.data.resultCode === 200) {
-                        alert('파일이 삭제되었습니다.');
-                        // 화면에서 해당 파일 지우기
-                        $(`#fileItem${bfId}`).remove();
-                        // 지운 다음에 개수 줄이기
-                        $('#isFile').val(0);
-                    }else{
-                       alert('파일 삭제가 실패되었습니다.'); 
-                       console.log("resultCode", resp.data.resultCode, typeof resp.data.resultCode);
-                    }
-                // 요청이 실패하면  
-                }).catch(error =>{
-                    alert(error);
-                });
-                
+
+                axios.delete(`/api/v1/board/file/${bfId}`)
+                    .then(resp => {
+                        if (resp.data.resultCode === 200) {
+                            alert('선택한 파일이 삭제되었습니다.')
+                            $('#fileTd').text('없음');   // 기존내용 덮어쓰기
+                        } else {
+                            alert('선택한 파일 삭제가 실패되었습니다.');
+                        }
+                    }).catch((error) => {
+                        alert(error);
+                    })
+
+                // 지운 다음에 개수 줄이기
+                $('#isFile').val(0);
+
             }
 
         }
 
-        // 글 수정
         const updateBoard = () => {
-            // 유효성 검사
             if (validated()) {
-                // form 요소 선택
                 const frm = $('#frm');
-                // FormData 객체로 변환
                 const formData = new FormData(frm[0]);
-                // 수정할 게시글 ID 가져오기
-                const brdId = $('#brdId').val();
-                // 요청
-                axios.post(`/api/v1/board/update/${brdId}`, formData)
-                // 요청 성공시
-                .then(resp => {
-                    if (resp.data.resultCode === 200) {
-                        alert('게시글이 수정되었습니다.')
-                        location.href = '/board/list';
-                    } else {
-                        alert('게시글 수정이 실패되었습니다.');
-                    }
-                // 요청 실패시    
-                }).catch((error) => {
-                    alert(error);
-                })
+
+                const header = {
+                    'Content-type': 'multipart/form-data'
+                }
+
+                axios.put('/api/v1/board', formData, header)
+                    .then(resp => {
+                        if (resp.data.resultCode === 200) {
+                            alert('게시글이 수정되었습니다.')
+                            location.href = '/board/list';
+                        } else {
+                            alert('게시글 수정이 실패되었습니다.');
+                        }
+                    }).catch((error) => {
+                        alert(error);
+                    })
+
             }
         }
 

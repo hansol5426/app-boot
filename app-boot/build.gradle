@@ -78,6 +78,12 @@ dependencies {
    	implementation 'com.jhlabs:filters:2.0.235-1'
    	implementation 'com.mortennobel:java-image-scaling:0.8.6'
 
+	// 하이버네이트 formatter 설정
+	implementation 'com.github.gavlyukovskiy:p6spy-spring-boot-starter:1.9.0'
+
+	// security 처리
+	implementation 'org.springframework.boot:spring-boot-starter-security:3.5.5'
+
 }
 
 tasks.named('test') {

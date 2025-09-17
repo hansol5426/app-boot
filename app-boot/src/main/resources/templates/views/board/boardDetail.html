@@ -89,29 +89,26 @@
             location.href = `/board/update/${brdId}`;
         }
 
-        const deleteBoard = () => {
-            // 삭제 확인 요청
+        const deleteBoard = async () => {
             const isConfirm = confirm('정말 삭제하시겠습니까?');
-            // 삭제한다고 하면
+
             if (isConfirm) {
-                // 삭제할 게시글ID 가져오기
+
                 const brdId = $('#brdId').val();
-                // 삭제요청 보내기
-                axios.post(`/api/v1/board/delete/${brdId}`)
-                    .then(resp => {
-                        // 코드가 200이면 삭제성공
-                        if (resp.data.resultCode === 200) {
-                            alert("삭제가 완료되었습니다.");
-                            // 삭제 완료 후 게시글 목록으로 보내기
-                            location.href = '/board/list';
-                        // 코드가 200이 아니면 에러띄우기    
-                        } else {
-                            alert("삭제 처리중 오류가 발생하였습니다.");
-                        }
-                    })
-                    .catch(error => {
-                        alert(error);
-                    });
+
+                try {
+                    const result = await axios.delete(`/api/v1/board/${brdId}`);
+
+                    if (result.data.resultCode === 200) {
+                        alert("게시글 삭제가 완료되었습니다.");
+                        location.href = '/board/list';
+                    } else {
+                        alert("게시글 삭제가 실패했습니다.");
+                    }
+                } catch (error) {
+                    console.log(error.response);
+                    alert(error);
+                };
             }
         }
 
