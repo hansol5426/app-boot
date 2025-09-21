@@ -8,23 +8,25 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import it.korea.app_boot.gallery.dto.GalleryRequest;
 import it.korea.app_boot.gallery.service.GallereyService;
+import it.korea.app_boot.user.dto.UserSecuDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("api/v1")
+@RequestMapping("/api/v1")
 public class GalleryAPIController {
 
     private final GallereyService gallereyService;
@@ -32,7 +34,7 @@ public class GalleryAPIController {
 
     @GetMapping("/gal")
     public ResponseEntity<Map<String, Object>> getGalleryList(
-                        @PageableDefault(page=0, size = 10,sort = "createDate", 
+                        @PageableDefault(page=0, size = 12,sort = "createDate", 
                         direction = Sort.Direction.DESC) Pageable pageable) throws Exception{
 
         Map<String, Object> resultMap = gallereyService.getGalleryList(pageable);
@@ -41,13 +43,14 @@ public class GalleryAPIController {
     }
 
     @PostMapping("/gal")
-    public ResponseEntity<Map<String, Object>> writeGallery(@Valid @ModelAttribute GalleryRequest request) throws Exception{
+    public ResponseEntity<Map<String, Object>> writeGallery(@Valid @ModelAttribute GalleryRequest request,
+                                                            @AuthenticationPrincipal UserSecuDTO user) throws Exception{
 
         Map<String, Object> resultMap = new HashMap<>();
         HttpStatus status = HttpStatus.OK;
 
         try{
-
+            request.setWriter(user.getUserId());
             gallereyService.addGallery(request);
             resultMap.put("resultCode", 200);
             resultMap.put("resultMessage", "OK");
@@ -63,17 +66,15 @@ public class GalleryAPIController {
     }
 
     // 이미지 수정
-    @PutMapping("/gal/{nums}")
-    public ResponseEntity<Map<String, Object>> updateGallery(
-                                @PathVariable("nums") String nums,
-                                @Valid @ModelAttribute GalleryRequest request) throws Exception{
+    @PutMapping("/gal")
+    public ResponseEntity<Map<String, Object>> updateGallery(@Valid @ModelAttribute GalleryRequest request) throws Exception{
 
         Map<String, Object> resultMap = new HashMap<>();
         HttpStatus status = HttpStatus.OK;
 
         try{
 
-            gallereyService.updateGallery(nums,request);
+            gallereyService.updateGallery(request);
             resultMap.put("resultCode", 200);
             resultMap.put("resultMessage", "OK");
 
@@ -87,14 +88,14 @@ public class GalleryAPIController {
     }
 
     // 이미지 삭제
-    @DeleteMapping("/gal/{nums}")
-    public ResponseEntity<Map<String, Object>> deleteGallery(@PathVariable("nums") String nums) throws Exception{
+    @DeleteMapping("/gal")
+    public ResponseEntity<Map<String, Object>> deleteGallery(@RequestParam("targetIds") String targetIds) throws Exception{
 
         Map<String, Object> resultMap = new HashMap<>();
         HttpStatus status = HttpStatus.OK;
 
         try{
-            gallereyService.delGallery(nums);
+            gallereyService.delGallery(targetIds);
             resultMap.put("resultCode", 200);
             resultMap.put("resultMessage", "OK");
 

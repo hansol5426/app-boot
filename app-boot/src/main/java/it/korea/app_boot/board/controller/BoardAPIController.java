@@ -7,6 +7,7 @@ import it.korea.app_boot.board.dto.BoardDTO;
 import it.korea.app_boot.board.dto.BoardSearchDTO;
 import it.korea.app_boot.board.service.BoardJPAService;
 import it.korea.app_boot.board.service.BoardService;
+import it.korea.app_boot.user.dto.UserSecuDTO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -114,13 +116,15 @@ public class BoardAPIController {
     
     // 게시글 작성
     @PostMapping("/board")
-    public ResponseEntity<Map<String, Object>> writeBoard(@Valid @ModelAttribute BoardDTO.Request request) throws Exception{
+    public ResponseEntity<Map<String, Object>> writeBoard(@Valid @ModelAttribute BoardDTO.Request request,
+                                                          @AuthenticationPrincipal UserSecuDTO user) throws Exception{
 
         Map<String, Object> resultMap = new HashMap<>();
         HttpStatus status = HttpStatus.OK;
 
+        request.setWriter(user.getUserId());
         resultMap = jpaService.writeBoard(request);
-
+        
         return new ResponseEntity<>(resultMap,status);
     }
 

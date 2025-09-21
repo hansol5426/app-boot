@@ -22,7 +22,7 @@ public class UserEntity extends BaseEntity{
 
     private String passwd;
     private String userName;
-    private int birth;
+    private String birth;
     private String gender;
     private String phone;
     private String email;
@@ -34,7 +34,7 @@ public class UserEntity extends BaseEntity{
     private String delYn;
 
     // 데이터가 많지 않아서 즉시 가져오는 걸로 함
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name="user_role")
     private UserRoleEntity role;
 

@@ -16,8 +16,8 @@ public class LoginFailureHandler implements AuthenticationFailureHandler{
     public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
             AuthenticationException exception) throws IOException, ServletException {
         
-
-        String encoded = URLEncoder.encode("아이디 또는 패스워드를 확인해주십시오.");     
+        // 한글 깨짐 방지
+        String encoded = URLEncoder.encode("아이디 또는 패스워드를 확인해주십시오.","UTF-8");     
         response.sendRedirect("/user/login/error?msg=" + encoded);        
     }
 

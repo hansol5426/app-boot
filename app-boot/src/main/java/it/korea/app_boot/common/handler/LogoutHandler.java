@@ -27,7 +27,7 @@ public class LogoutHandler implements LogoutSuccessHandler{
         // 쿠키정보 지우기
         Cookie[] cookies = request.getCookies();
         if(cookies != null){
-            // 시간을 0으로해서 삭제
+            // 시간을 0으로해서 삭제 >> 브라우저는 즉시 그 쿠키를 삭제한다는 의미임
             for(Cookie cookie : cookies){
                 cookie.setMaxAge(0);
                 response.addCookie(cookie);

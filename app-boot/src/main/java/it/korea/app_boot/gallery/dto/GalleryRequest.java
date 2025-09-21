@@ -11,6 +11,8 @@ import lombok.Setter;
 @Setter
 public class GalleryRequest {
 
+    private String nums;
+    private String writer;
     @NotBlank(message = "타이틀은 존재해야 합니다.")
     private String title;
     @NotNull(message = "파일은 필수 입니다.")
