@@ -96,4 +96,88 @@ public class GallereyService {
         galleryRepository.save(entity);
 
     }
+
+    // 이미지 수정
+    @Transactional
+    public void updateGallery(String nums, GalleryRequest request) throws Exception{
+
+        GalleryEntity galleryEntity = 
+            galleryRepository.findById(nums)
+            .orElseThrow(()-> new RuntimeException("이미지 없음"));
+
+        GalleryDTO dto = GalleryDTO.of(galleryEntity);
+
+        // 파일 유무에 상관없이 제목과 작성자는 업데이트 되게!
+        dto.setTitle(request.getTitle());
+        dto.setWriter("admin");
+
+        // 기존 파일 있으면 그대로 두기 위해
+        if(request.getFile() != null && !request.getFile().isEmpty()){
+
+            String fileName = request.getFile().getOriginalFilename();
+            String ext = fileName.substring(fileName.lastIndexOf(".") + 1);
+            String oldFilePath = galleryEntity.getFilePath() + galleryEntity.getStoredName();
+            String oldThumbFilePath = galleryEntity.getFilePath() + "thumb" + File.separator + galleryEntity.getFileThumbName();
+
+            fileUtils.deleteFile(oldFilePath);
+            fileUtils.deleteFile(oldThumbFilePath);
+
+            if(!extentions.contains(ext)){
+                throw new RuntimeException("파일형식이 맞지 않습니다. 이미지만 가능합니다.");
+            }
+            
+            Map<String, Object> fileMap = fileUtils.uploadFiles(request.getFile(), filePath);
+
+            if(fileMap == null){
+                throw new RuntimeException("파일 업로드가 실패했습니다.");
+            }
+            
+            String thumbFilePath = filePath + "thumb" + File.separator;
+            String storedFilePath = filePath + fileMap.get("storedFileName").toString();
+            
+            File file = new File(storedFilePath);
+            
+            if(!file.exists()){
+                throw new RuntimeException("업로드 파일이 존재하지 않음");
+            }
+            
+            String thumbName = fileUtils.thumbNailFile(150, 150, file, thumbFilePath);
+            
+            dto.setFileName(fileMap.get("fileName").toString());
+            dto.setStoredName(fileMap.get("storedFileName").toString());
+            dto.setFilePath(filePath);
+            dto.setFileThumbName(thumbName);
+        }
+
+        GalleryEntity entity = GalleryDTO.to(dto);
+        galleryRepository.save(entity);
+
+    }
+
+    // 이미지 삭제
+    @Transactional
+    public Map<String,Object> delGallery(String nums) throws Exception{
+
+        GalleryEntity galleryEntity = galleryRepository.findById(nums)
+                .orElseThrow(()->new RuntimeException());
+
+        // db 삭제        
+        galleryRepository.delete(galleryEntity);                      
+               
+        // 기존 파일
+        String oldFilePath = galleryEntity.getFilePath() + galleryEntity.getStoredName();
+        // 썸네일 파일
+        String thumbFilePath = galleryEntity.getFilePath() + "thumb" + File.separator + galleryEntity.getFileThumbName();
+        
+        // 삭제
+        fileUtils.deleteFile(oldFilePath);
+        fileUtils.deleteFile(thumbFilePath);
+
+        Map<String,Object> resultMap = new HashMap<>();
+
+        resultMap.put("resultCode", 200);
+        resultMap.put("resultMsg", "OK");
+        
+        return resultMap;
+    }
 }
